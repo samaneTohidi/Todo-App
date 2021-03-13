@@ -12,6 +12,8 @@ struct ContentView: View {
     
     @Environment(\.managedObjectContext) var managedObjectContext
     @State private var showingAddTodoView: Bool = false
+    @FetchRequest(entity: Todo_App.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \Todo_App.name, ascending: true)]) var todos: FetchedResults<Todo_App>
+    
 
     // MARK: - BODY
     
@@ -19,11 +21,24 @@ struct ContentView: View {
     var body: some View {
         
         NavigationView{
-            List(0 ..< 5) { item in
-                Text("Hello, world!")
+            List{
+                ForEach(self.todos, id: \.self){
+                    todo in
+                    HStack{
+                        Text(todo.name ?? "Unknown")
+                        
+                        Spacer()
+                        
+                        Text(todo.priority ?? "Unkown")
+                    }
+                }
+                
+                .onDelete(perform: deleteTodo)
+
             } //: LIST
             .navigationBarTitle("Todo", displayMode: .inline)
-            .navigationBarItems(trailing:
+            .navigationBarItems(leading: EditButton(),
+                trailing:
                                     Button(action: {
                                         self.showingAddTodoView.toggle()
                                     }){
@@ -37,6 +52,24 @@ struct ContentView: View {
         } //: NAVIGATION
            
     }
+    
+    // MARK: - FUNCTIONS
+    
+    private func deleteTodo(at offsets: IndexSet) {
+      for index in offsets {
+        let todo = todos[index]
+        managedObjectContext.delete(todo)
+        
+        do {
+          try managedObjectContext.save()
+        } catch {
+          print(error)
+        }
+      }
+    }
+    
+   
+  
 }
 
 
@@ -44,7 +77,9 @@ struct ContentView: View {
 // MARK: - PREVIEW
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView()
-            .previewDevice("iPhone 11 Pro")
+        let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+        return ContentView()
+          .environment(\.managedObjectContext, context)
+          .previewDevice("iPhone 11 Pro")
     }
 }
