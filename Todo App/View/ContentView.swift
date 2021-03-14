@@ -11,9 +11,11 @@ struct ContentView: View {
     // MARK: - PROPERTISE
     
     @Environment(\.managedObjectContext) var managedObjectContext
-    @State private var showingAddTodoView: Bool = false
     @FetchRequest(entity: Todo_App.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \Todo_App.name, ascending: true)]) var todos: FetchedResults<Todo_App>
     
+    @State private var animatingButton: Bool = false
+    @State private var showingAddTodoView: Bool = false
+
 
     // MARK: - BODY
     
@@ -57,6 +59,46 @@ struct ContentView: View {
                 }
                 
             } //: ZSTACK
+            .sheet(isPresented: $showingAddTodoView) {
+                AddTodoView().environment(\.managedObjectContext, self.managedObjectContext)
+            }
+            .overlay(
+                ZStack {
+                    Group{
+                        Circle()
+                            .fill(Color.blue)
+                            .opacity(self.animatingButton ? 0.2 : 0)
+                            .scaleEffect(self.animatingButton ? 1 : 0)
+                            .frame(width: 68, height: 68, alignment: .center)
+                        Circle()
+                            .fill(Color.blue)
+                            .opacity(self.animatingButton ? 0.15 : 0)
+                            .scaleEffect(self.animatingButton ? 1 : 0)
+                            .frame(width: 88, height: 88, alignment: .center)
+                          
+                    }
+                    .animation(Animation.easeInOut(duration: 2).repeatForever(autoreverses: true))
+                    
+                    Button(action: {
+                        self.showingAddTodoView.toggle()
+                    })
+                    {
+                        Image(systemName: "plus.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .background(Circle().fill(Color("ColorBase")))
+                            .frame(width: 48, height: 48, alignment: .center)
+                    } //: BUTTON
+                    .onAppear(perform: {
+                      self.animatingButton.toggle()
+                    })
+                } //: ZSTACK
+                .padding(.bottom, 15)
+                .padding(.trailing, 15)
+                , alignment: .bottomTrailing
+            )
+        
+            
         } //: NAVIGATION
            
     }
