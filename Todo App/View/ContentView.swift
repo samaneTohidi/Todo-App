@@ -12,10 +12,18 @@ struct ContentView: View {
     
     @Environment(\.managedObjectContext) var managedObjectContext
     @FetchRequest(entity: Todo_App.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \Todo_App.name, ascending: true)]) var todos: FetchedResults<Todo_App>
+    @EnvironmentObject var iconSettings: IconNames
+
+    
     
     @State private var animatingButton: Bool = false
     @State private var showingAddTodoView: Bool = false
+    @State private var showingSettingsView: Bool = false
 
+    
+    // THEME
+    @ObservedObject var theme = ThemeSettings()
+    var themes: [Theme] = themeData
 
     // MARK: - BODY
     
@@ -28,27 +36,44 @@ struct ContentView: View {
                     ForEach(self.todos, id: \.self){
                         todo in
                         HStack{
-                            Text(todo.name ?? "Unknown")
+                            Circle()
+                              .frame(width: 12, height: 12, alignment: .center)
+                              .foregroundColor(self.colorize(priority: todo.priority ?? "Normal"))
                             
+                            Text(todo.name ?? "Unknown")
+                                .fontWeight(.semibold)
+
                             Spacer()
                             
                             Text(todo.priority ?? "Unkown")
-                        }
+                                .font(.footnote)
+                                .foregroundColor(Color(UIColor.systemGray2))
+                                .padding(3)
+                                .frame(minWidth: 62)
+                                .overlay(
+                                  Capsule().stroke(Color(UIColor.systemGray2), lineWidth: 0.75)
+                              )
+                            } //: HSTACK
+                              .padding(.vertical, 10)
                     }
                     
                     .onDelete(perform: deleteTodo)
 
                 } //: LIST
                 .navigationBarTitle("Todo", displayMode: .inline)
-                .navigationBarItems(leading: EditButton(),
+                .navigationBarItems(leading: EditButton().accentColor(themes[self.theme.themeSettings].themeColor),
                     trailing:
                                         Button(action: {
-                                            self.showingAddTodoView.toggle()
+                                            self.showingSettingsView.toggle()
                                         }){
-                                            Image(systemName: "plus")
+                                            Image(systemName: "paintbrush")
+                                                .imageScale(.large)
                                         }
-                    .sheet(isPresented: $showingAddTodoView) {
-                        AddTodoView().environment(\.managedObjectContext, self.managedObjectContext)
+                    .accentColor(themes[self.theme.themeSettings].themeColor)
+
+                    .sheet(isPresented: $showingSettingsView) {
+                        SettingsView().environmentObject(self.iconSettings)
+
                     }
                 
             )
@@ -66,12 +91,12 @@ struct ContentView: View {
                 ZStack {
                     Group{
                         Circle()
-                            .fill(Color.blue)
+                            .fill(themes[self.theme.themeSettings].themeColor)
                             .opacity(self.animatingButton ? 0.2 : 0)
                             .scaleEffect(self.animatingButton ? 1 : 0)
                             .frame(width: 68, height: 68, alignment: .center)
                         Circle()
-                            .fill(Color.blue)
+                            .fill(themes[self.theme.themeSettings].themeColor)
                             .opacity(self.animatingButton ? 0.15 : 0)
                             .scaleEffect(self.animatingButton ? 1 : 0)
                             .frame(width: 88, height: 88, alignment: .center)
@@ -89,6 +114,8 @@ struct ContentView: View {
                             .background(Circle().fill(Color("ColorBase")))
                             .frame(width: 48, height: 48, alignment: .center)
                     } //: BUTTON
+                    
+                    .accentColor(themes[self.theme.themeSettings].themeColor)
                     .onAppear(perform: {
                       self.animatingButton.toggle()
                     })
@@ -100,6 +127,7 @@ struct ContentView: View {
         
             
         } //: NAVIGATION
+        
            
     }
     
@@ -119,6 +147,18 @@ struct ContentView: View {
     }
     
    
+    private func colorize(priority: String) -> Color {
+      switch priority {
+      case "High":
+        return .pink
+      case "Normal":
+        return .green
+      case "Low":
+        return .blue
+      default:
+        return .gray
+      }
+    }
   
 }
 
